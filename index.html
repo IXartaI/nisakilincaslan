@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>Doğum Günü Kutlaması</title>
+<style>
+  html, body {
+    margin:0; padding:0; height:100%;
+    overflow:hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: black;
+  }
+
+  /* Arkadaki bulanık büyük fotoğraf (kenar boşlukları için) */
+  .background-blur {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('arkaplan.jpg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    filter: blur(30px) brightness(0.7);
+    z-index: 0;
+  }
+
+  /* Ortadaki fotoğraf */
+  .foreground-image {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    height: 100vh;
+    width: auto;
+    transform: translateX(-50%);
+    object-fit: cover;
+    z-index: 1;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+
+  .button-container {
+    position: fixed; bottom: 30px; width: 100%; text-align: center; z-index: 5;
+  }
+
+  button {
+    padding: 12px 25px;
+    font-size: 1.4em;
+    background-color: #ff4081;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+  }
+
+  #marquee {
+    position: fixed;
+    bottom: 90px;
+    font-size: 2.5em;
+    font-weight: 900;
+    user-select: none;
+    pointer-events: none;
+    z-index: 5;
+    color: transparent;
+    background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    white-space: nowrap;
+    left: 0;
+    padding: 0 10px;
+    display: none;
+    height: 1.2em;
+    line-height: 1.2em;
+  }
+
+  .emoji {
+    color: initial !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    filter: none !important;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+
+  <div class="background-blur"></div>
+  <img src="arkaplan.jpg" alt="Fotoğraf" class="foreground-image" />
+
+  <div class="button-container">
+    <button id="celebrateBtn">TIKLA!</button>
+  </div>
+
+  <div id="marquee">
+    DOĞUM GÜNÜN KUTLU OLSUN
+    &nbsp;NİCE MUTLU SENELERE PREMSES&nbsp;&nbsp;&nbsp;<span class="emoji">🎉</span><span class="emoji">❤️</span>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
+  <canvas id="hearts-canvas"></canvas>
+
+  <audio id="birthdaySong" src="muzik.mp3" preload="auto" loop></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    const button = document.getElementById('celebrateBtn');
+    const marquee = document.getElementById('marquee');
+    const song = document.getElementById('birthdaySong');
+
+    let posX = 0;
+    let direction = 1;
+    const speed = 0.5; // Yazı hızı 1 olarak değiştirildi
+
+    function animateMarquee() {
+      if (marquee.style.display === 'none') return;
+
+      const maxX = window.innerWidth - marquee.offsetWidth;
+
+      posX += speed * direction;
+      if(posX >= maxX) {
+        direction = -1;
+        posX = maxX;
+      }
+      else if(posX <= 0) {
+        direction = 1;
+        posX = 0;
+      }
+      marquee.style.left = posX + 'px';
+
+      requestAnimationFrame(animateMarquee);
+    }
+
+    function startConfetti() {
+      const colors = ['#ff69b4', '#ff0000', '#00ffff', '#ffff00', '#00ff00', '#ff8800'];
+      const duration = 5 * 1000;
+      const end = Date.now() + duration;
+
+      (function frame() {
+        confetti({
+          particleCount: 10,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: [colors[Math.floor(Math.random() * colors.length)]]
+        });
+        confetti({
+          particleCount: 10,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: [colors[Math.floor(Math.random() * colors.length)]]
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    }
+
+    const heartsCanvas = document.getElementById('hearts-canvas');
+    const ctx = heartsCanvas.getContext('2d');
+
+    function resizeCanvas() {
+      heartsCanvas.width = window.innerWidth;
+      heartsCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Heart {
+      constructor() {
+        this.x = Math.random() * heartsCanvas.width;
+        this.y = Math.random() * heartsCanvas.height; // Rastgele Y konumu
+        this.size = 15 + Math.random() * 15;
+        this.speed = 0.5 + Math.random() * 1.5;
+        this.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+        this.opacity = 1;
+        this.vx = (Math.random() - 0.5) * 1; // X ekseninde hafif hareket
+        this.vy = (Math.random() - 0.5) * 1; // Y ekseninde hafif hareket
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(this.size / 2, -this.size / 2, this.size, this.size / 3, 0, this.size);
+        ctx.bezierCurveTo(-this.size, this.size / 3, -this.size / 2, -this.size / 2, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.opacity -= 0.01;
+        if(this.opacity <= 0 ||
+           this.x < 0 || this.x > heartsCanvas.width ||
+           this.y < 0 || this.y > heartsCanvas.height) {
+          this.x = Math.random() * heartsCanvas.width;
+          this.y = Math.random() * heartsCanvas.height;
+          this.opacity = 1;
+          this.speed = 0.5 + Math.random() * 1.5;
+          this.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+          this.size = 15 + Math.random() * 15;
+          this.vx = (Math.random() - 0.5) * 1;
+          this.vy = (Math.random() - 0.5) * 1;
+        }
+      }
+    }
+
+    const hearts = [];
+    for(let i=0; i<30; i++) {
+      hearts.push(new Heart());
+    }
+
+    function animateHearts() {
+      ctx.clearRect(0, 0, heartsCanvas.width, heartsCanvas.height);
+      hearts.forEach(h => {
+        h.update();
+        h.draw();
+      });
+      requestAnimationFrame(animateHearts);
+    }
+
+    button.addEventListener('click', () => {
+      button.style.display = 'none';
+      marquee.style.display = 'block';
+      song.play();
+      animateMarquee();
+      startConfetti();
+      animateHearts();
+    });
+  </script>
+
+</body>
+</html>
